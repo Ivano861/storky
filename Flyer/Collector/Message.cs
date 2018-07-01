@@ -90,7 +90,6 @@ namespace Flyer
         #endregion
 
         #region Private members
-        private CommandList _command;
         private byte[] _data;
         #endregion
 
@@ -102,13 +101,13 @@ namespace Flyer
         {
             if (data == null || data.Length < 1)
             {
-                _command = CommandList.Unknown;
+                Command = CommandList.Unknown;
                 _data = new byte[0];
                 return;
             }
 
             // Create the new message
-            _command = (CommandList)data[0];
+            Command = (CommandList)data[0];
             int lenMessage = data.Length - 1;
             _data = new byte[lenMessage];
             Array.Copy(data, 1, _data, 0, lenMessage);
@@ -124,7 +123,7 @@ namespace Flyer
         /// <summary>
         /// Message ID
         /// </summary>
-        public CommandList Command { get => _command; }
+        public CommandList Command { get; }
 
         /// <summary>
         /// array of bytes that contains the data associated at the message

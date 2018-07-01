@@ -55,6 +55,12 @@
     <Compile Include="Collector\Message.cs" />
     <Compile Include="Discovery\Discovery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Structures\IMember.cs" />
+    <Compile Include="Structures\ISubscription.cs" />
+    <Compile Include="Structures\Member.cs" />
+    <Compile Include="Structures\MemberSubscription.cs" />
+    <Compile Include="Structures\Subscription.cs" />
+    <Compile Include="Structures\Subscriptions.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

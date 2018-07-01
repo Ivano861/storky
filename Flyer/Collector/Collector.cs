@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Flyer.Structures;
+using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -36,11 +38,7 @@ namespace Flyer
         #region Private members for synchronous method
         private bool _inProcess = false;
 
-        private ushort _family;
-        private ushort _application;
-        private ushort _module;
-        private ushort _functionality;
-        private string _id;
+        private IMember _member;
 
         private Thread _connection;
         private Comunication _comunication;
@@ -49,13 +47,34 @@ namespace Flyer
         #region Constructors
         public Collector(ushort family, ushort application, ushort module, ushort functionality)
         {
-            _family = family;
-            _application = application;
-            _module = module;
-            _functionality = functionality;
-            _id = Guid.NewGuid().ToString();
+            _member = Member.Create(family, application, module, functionality);
 
             _connection = null;
+        }
+        public Collector(IMember member)
+        {
+            _member = member;
+
+            _connection = null;
+        }
+        #endregion
+
+        #region Static methods
+        public static Collector CreateAndConnectAsync(string hostName, ushort family, ushort application, ushort module, ushort functionality,
+                                                      ConnectedEventHandler connectedEvent,
+                                                      TerminatedEventHandler terminatedEvent,
+                                                      NotifyEventHandler notifyEvent)
+        {
+            Collector result = new Collector(Member.Create(family, application, module, functionality));
+
+            result._connection = null;
+            result.Connected += connectedEvent;
+            result.Terminated += terminatedEvent;
+            result.Notify += notifyEvent;
+
+            result.ConnectAsync(hostName, 3000);
+
+            return result;
         }
         #endregion
 
@@ -200,7 +219,7 @@ namespace Flyer
                     // New socket for direct communication with the new point that requires connection
                     _comunication = new Comunication(tcp);
 
-                    _comunication.SendCommand(new CommandHello(_family, _application, _module, _functionality, _id));
+                    _comunication.SendCommand(new CommandHello(_member));
 
                     // Read acknowledgment message
                     Message msg = _comunication.ReceiveMessage();
@@ -297,7 +316,7 @@ namespace Flyer
         {
             try
             {
-                _comunication.SendCommand(new CommandNotifyToGroup(message, family, application, module, functionality, strict, self));
+                _comunication.SendCommand(new CommandNotifyToGroup(message, Subscription.Create(family, application, module, functionality), strict, self));
             }
             catch (Exception)
             {
@@ -313,6 +332,74 @@ namespace Flyer
             catch (Exception)
             {
                 // TODO: 
+            }
+        }
+
+        public void Register(ushort family, ushort application = 0, ushort module = 0, ushort functionality = 0, bool strict = true)
+        {
+            try
+            {
+                _comunication.SendCommand(new CommandRegisterNotify(Subscription.Create(family, application, module, functionality), strict));
+            }
+            catch (Exception)
+            {
+                // TODO:
+            }
+        }
+        public void Register(ISubscription subscription, bool strict = true)
+        {
+            try
+            {
+                _comunication.SendCommand(new CommandRegisterNotify(subscription, strict));
+            }
+            catch (Exception)
+            {
+                // TODO:
+            }
+        }
+        public void Register(IEnumerable<ISubscription> subscriptions, bool strict = true)
+        {
+            try
+            {
+                _comunication.SendCommand(new CommandRegisterNotify(subscriptions, strict));
+            }
+            catch (Exception)
+            {
+                // TODO:
+            }
+        }
+
+        public void Deregister(ushort family, ushort application = 0, ushort module = 0, ushort functionality = 0)
+        {
+            try
+            {
+                _comunication.SendCommand(new CommandDeregisterNotify(Subscription.Create(family, application, module, functionality)));
+            }
+            catch (Exception)
+            {
+                // TODO:
+            }
+        }
+        public void Deregister(ISubscription subscription)
+        {
+            try
+            {
+                _comunication.SendCommand(new CommandDeregisterNotify(subscription));
+            }
+            catch (Exception)
+            {
+                // TODO:
+            }
+        }
+        public void Deregister(IEnumerable<ISubscription> subscriptions)
+        {
+            try
+            {
+                _comunication.SendCommand(new CommandDeregisterNotify(subscriptions));
+            }
+            catch (Exception)
+            {
+                // TODO:
             }
         }
         #endregion
