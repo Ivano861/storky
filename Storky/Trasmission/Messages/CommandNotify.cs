@@ -4,51 +4,46 @@ namespace Storky
 {
     internal class CommandNotify : CommandBase
     {
-        #region Membri privati
-        private byte[] _info;
-        private bool _self;
-        #endregion
-
         #region Constructors
         public CommandNotify(Message msg)
         {
             byte[] buffer = msg.Data;
-            _self = (buffer[0] != 0);
-            _info = new byte[buffer.Length - 1];
-            if (_info.Length > 0)
-                Array.Copy(buffer, 1, _info, 0, buffer.Length - 1);
+            Self = (buffer[0] != 0);
+            Info = new byte[buffer.Length - 1];
+            if (Info.Length > 0)
+                Array.Copy(buffer, 1, Info, 0, buffer.Length - 1);
         }
         public CommandNotify(CommandNotifyToGroup notifyToGroup)
         {
-            _info = new byte[notifyToGroup.Info.Length];
-            if (_info.Length > 0)
-                notifyToGroup.Info.CopyTo(_info, 0);
+            Info = new byte[notifyToGroup.Info.Length];
+            if (Info.Length > 0)
+                notifyToGroup.Info.CopyTo(Info, 0);
 
-            _self = notifyToGroup.Self;
+            Self = notifyToGroup.Self;
         }
         public CommandNotify(CommandNotifyToId notifyToId)
         {
-            _info = new byte[notifyToId.Info.Length];
-            if (_info.Length > 0)
-                notifyToId.Info.CopyTo(_info, 0);
+            Info = new byte[notifyToId.Info.Length];
+            if (Info.Length > 0)
+                notifyToId.Info.CopyTo(Info, 0);
 
-            _self = true;
+            Self = true;
         }
         #endregion
 
         #region Public properties
-        public byte[] Info { get => _info; }
-        public bool Self { get => _self; }
+        public byte[] Info { get; }
+        public bool Self { get; }
         #endregion
 
         #region Public methods
         public override byte[] ToSend()
         {
-            byte[] result = new byte[1 + 1 + _info.Length];
+            byte[] result = new byte[1 + 1 + Info.Length];
             result[0] = (byte)Message.CommandList.Notify;
-            result[1] = (byte)(_self ? 1 : 0);
-            if (_info.Length > 0)
-                _info.CopyTo(result, 2);
+            result[1] = (byte)(Self ? 1 : 0);
+            if (Info.Length > 0)
+                Info.CopyTo(result, 2);
 
             return result;
         }

@@ -48,6 +48,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Discovery\Discovery.cs" />
+    <Compile Include="Structures\IMember.cs" />
+    <Compile Include="Structures\ISubscription.cs" />
+    <Compile Include="Structures\Member.cs" />
+    <Compile Include="Structures\MemberSubscription.cs" />
+    <Compile Include="Structures\Subscription.cs" />
+    <Compile Include="Structures\Subscriptions.cs" />
     <Compile Include="Trasmission\Comunication.cs" />
     <Compile Include="Trasmission\Handshake.cs" />
     <Compile Include="Trasmission\Messages\CommandBase.cs" />

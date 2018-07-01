@@ -167,11 +167,11 @@ namespace Storky
             {
                 foreach (Registration registration in coupling.Registrations)
                 {
-                    if (registration.Family == sender.Family &&
-                        (registration.Application == sender.Application || (registration.Application == 0 && !registration.Strict) ) &&
-                        (registration.Module == sender.Module || (registration.Module == 0 && !registration.Strict)) &&
-                        (registration.Functionality == sender.Functionality || (registration.Functionality == 0 && !registration.Strict)) &&
-                        (coupling.Id != sender.Id || notify.Self))
+                    if ((registration.Subscription.Family == sender.Member.Subscription.Family) &&
+                        (registration.Subscription.Application == sender.Member.Subscription.Application || (registration.Subscription.Application == 0 && !registration.Strict) ) &&
+                        (registration.Subscription.Module == sender.Member.Subscription.Module || (registration.Subscription.Module == 0 && !registration.Strict)) &&
+                        (registration.Subscription.Functionality == sender.Member.Subscription.Functionality || (registration.Subscription.Functionality == 0 && !registration.Strict)) &&
+                        (coupling.Member.Id != sender.Member.Id || notify.Self))
                     {
                         coupling.SendNotify(notify);
                     }
@@ -182,11 +182,11 @@ namespace Storky
         {
             foreach (Coupling coupling in _couplings)
             {
-                if (coupling.Family == notifyToGroup.Family &&
-                    (coupling.Application == notifyToGroup.Application || (notifyToGroup.Application == 0 && !notifyToGroup.Strict)) &&
-                    (coupling.Module == notifyToGroup.Module || (notifyToGroup.Module == 0 && !notifyToGroup.Strict)) &&
-                    (coupling.Functionality == notifyToGroup.Functionality || (notifyToGroup.Functionality == 0 && !notifyToGroup.Strict)) &&
-                    (coupling.Id != sender.Id || notifyToGroup.Self))
+                if (coupling.Member.Subscription.Family == notifyToGroup.Subscription.Family &&
+                    (coupling.Member.Subscription.Application == notifyToGroup.Subscription.Application || (notifyToGroup.Subscription.Application == 0 && !notifyToGroup.Strict)) &&
+                    (coupling.Member.Subscription.Module == notifyToGroup.Subscription.Module || (notifyToGroup.Subscription.Module == 0 && !notifyToGroup.Strict)) &&
+                    (coupling.Member.Subscription.Functionality == notifyToGroup.Subscription.Functionality || (notifyToGroup.Subscription.Functionality == 0 && !notifyToGroup.Strict)) &&
+                    (coupling.Member.Id != sender.Member.Id || notifyToGroup.Self))
                 {
                     coupling.SendNotify(new CommandNotify(notifyToGroup));
                 }
@@ -196,7 +196,7 @@ namespace Storky
         {
             foreach (Coupling coupling in _couplings)
             {
-                if (coupling.Id == notifyToId.Id)
+                if (coupling.Member.Id == notifyToId.Id)
                 {
                     coupling.SendNotify(new CommandNotify(notifyToId));
                 }

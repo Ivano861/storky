@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Storky.Structures;
+using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
@@ -10,14 +11,6 @@ namespace Storky
         #region Private members
         private bool _exit;
         private Comunication _comunication;
-        private ushort _family;
-        private ushort _application;
-        private ushort _module;
-        private ushort _functionality;
-        private string _id;
-
-        private IList<Registration> _registrations;
-
         private Thread _threadSocket;
         #endregion
 
@@ -26,15 +19,15 @@ namespace Storky
         {
             _exit = false;
             _comunication = comunication;
-            _family = hello.Family;
-            _application = hello.Application;
-            _module = hello.Module;
-            _functionality = hello.Functionality;
-            _id = hello.Id;
+            Member = new Member(hello.Member.Id,
+                                 hello.Member.Subscription.Family,
+                                 hello.Member.Subscription.Application,
+                                 hello.Member.Subscription.Module,
+                                 hello.Member.Subscription.Functionality);
 
-            _registrations = new List<Registration>
+            Registrations = new List<Registration>
             {
-                new Registration(_family, _application, _module, _functionality, false)
+                new Registration(Member.Subscription, false)
             };
 
             // We create the thread for comunication with remote
@@ -44,12 +37,8 @@ namespace Storky
         #endregion
 
         #region Properties
-        public ushort Family { get => _family; }
-        public ushort Application { get => _application; }
-        public ushort Module { get => _module; }
-        public ushort Functionality { get => _functionality; }
-        public string Id { get => _id; }
-        public IList<Registration> Registrations { get => _registrations; }
+        public IMember Member { get; }
+        public IList<Registration> Registrations { get; }
         #endregion
 
         #region Working thread for comunication
@@ -89,34 +78,13 @@ namespace Storky
                     }
                     catch (ThreadAbortException /*ex*/) { throw; }
                     catch (ObjectDisposedException /*ex*/) { throw; }
-                    catch (SocketException ex)
-                    {
-                        switch (ex.NativeErrorCode)
-                        {
-                            case 10053: // WSAECONNABORTED: An established connection was aborted by the software in your host machine.
-                            case 10054: // WSAECONNRESET: An existing connection was forcibly closed by the remote host.
-                                break;
-                            default:
-                                break;
-                        }
-                        throw;
-                    }
+                    catch (SocketException  /*ex*/) { throw; }
                     catch (Exception /*ex*/) { /*We try to listen */ }
                 }
             }
             catch (ThreadAbortException /*ex*/) { }
             catch (ObjectDisposedException /*ex*/) { }
-            catch (SocketException ex)
-            {
-                switch (ex.NativeErrorCode)
-                {
-                    case 10053: // WSAECONNABORTED: An established connection was aborted by the software in your host machine.
-                    case 10054: // WSAECONNRESET: An existing connection was forcibly closed by the remote host.
-                        break;
-                    default:
-                        break;
-                }
-            }
+            catch (SocketException /*ex*/) { }
             catch (Exception /*ex*/) { }
             finally
             {
@@ -130,37 +98,46 @@ namespace Storky
         private void AddRegistration(CommandRegisterNotify registerNotify)
         {
             bool isPresent = false;
-            foreach (Registration registration in _registrations)
+            for (int i = 0; i < registerNotify.Subscriptions.Count; i++)
             {
-                if (registration.Family == registerNotify.Family &&
-                    registration.Application == registerNotify.Application &&
-                    registration.Module == registerNotify.Module &&
-                    registration.Functionality == registerNotify.Functionality)
+                foreach (Registration registration in Registrations)
                 {
-                    if (registration.Strict != registerNotify.Strict)
-                        _registrations.Remove(registration);
-                    else
-                        isPresent = true;
-                    break;
+                    if (registration.Subscription.Family == registerNotify.Subscriptions[i].Family &&
+                        registration.Subscription.Application == registerNotify.Subscriptions[i].Application &&
+                        registration.Subscription.Module == registerNotify.Subscriptions[i].Module &&
+                        registration.Subscription.Functionality == registerNotify.Subscriptions[i].Functionality)
+                    {
+                        if (registration.Strict != registerNotify.Strict)
+                            Registrations.Remove(registration);
+                        else
+                            isPresent = true;
+                        break;
+                    }
                 }
-            }
-            if (!isPresent)
-            {
-                _registrations.Add(new Registration(registerNotify.Family, registerNotify.Application, registerNotify.Module, registerNotify.Functionality, registerNotify.Strict));
+                if (!isPresent)
+                {
+                    Registrations.Add(new Registration(registerNotify.Subscriptions[i].Family,
+                                                       registerNotify.Subscriptions[i].Application,
+                                                       registerNotify.Subscriptions[i].Module,
+                                                       registerNotify.Subscriptions[i].Functionality, registerNotify.Strict));
+                }
             }
         }
 
         private void RemoveRegistration(CommandDeregisterNotify deregisterNotify)
         {
-            foreach (Registration registration in _registrations)
+            for (int i = 0; i < deregisterNotify.Subscriptions.Count; i++)
             {
-                if (registration.Family == deregisterNotify.Family &&
-                    registration.Application == deregisterNotify.Application &&
-                    registration.Module == deregisterNotify.Module &&
-                    registration.Functionality == deregisterNotify.Functionality)
+                foreach (Registration registration in Registrations)
                 {
-                    _registrations.Remove(registration);
-                    break;
+                    if (registration.Subscription.Family == deregisterNotify.Subscriptions[i].Family &&
+                        registration.Subscription.Application == deregisterNotify.Subscriptions[i].Application &&
+                        registration.Subscription.Module == deregisterNotify.Subscriptions[i].Module &&
+                        registration.Subscription.Functionality == deregisterNotify.Subscriptions[i].Functionality)
+                    {
+                        Registrations.Remove(registration);
+                        break;
+                    }
                 }
             }
         }

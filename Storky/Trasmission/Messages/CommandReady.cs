@@ -2,9 +2,6 @@
 {
     internal class CommandReady : CommandBase
     {
-        #region Private members
-        #endregion
-
         #region Constructors
         public CommandReady()
         {
