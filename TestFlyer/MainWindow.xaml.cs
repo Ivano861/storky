@@ -1,4 +1,5 @@
 ﻿using Flyer;
+using Flyer.Structures;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +54,7 @@ namespace TestFlayer
                 }));
         }
 
-        Collector _collector;
+        private Collector _collector;
         private void Connect_Click(object sender, RoutedEventArgs e)
         {
             if (_ipEndPoints == null)
@@ -83,6 +84,7 @@ namespace TestFlayer
         {
             if (e.Result)
             {
+                _collector.Register(Subscription.Create(1,2,3,4));
                 _collector.Send(new byte[] { 1, 2 }, self: true);
                 _collector.Send(new byte[] { 3, 4 }, 1, strict: false, self: true);
             }
@@ -96,6 +98,35 @@ namespace TestFlayer
         private void Collector_Terminated(TerminatedEventArgs e)
         {
             //throw new NotImplementedException();
+        }
+
+        private void Register_Click(object sender, RoutedEventArgs e)
+        {
+            _collector.Register(2);
+            _collector.Register(3, 4);
+        }
+
+        private void Deregister_Click(object sender, RoutedEventArgs e)
+        {
+            _collector.Deregister(2);
+        }
+
+        private void MultiRegister_Click(object sender, RoutedEventArgs e)
+        {
+            ISubscription[] subscriptions = new ISubscription[2];
+
+            subscriptions[0] = Subscription.Create(4);
+            subscriptions[1] = Subscription.Create(5, 6);
+            _collector.Register(subscriptions);
+        }
+
+        private void MultiDeregister_Click(object sender, RoutedEventArgs e)
+        {
+            ISubscription[] subscriptions = new ISubscription[2];
+
+            subscriptions[0] = Subscription.Create(4);
+            subscriptions[1] = Subscription.Create(5, 6);
+            _collector.Deregister(subscriptions);
         }
     }
 }
