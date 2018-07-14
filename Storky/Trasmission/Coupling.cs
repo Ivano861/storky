@@ -1,6 +1,8 @@
-﻿using Storky.Structures;
+﻿using Storky.LogManage;
+using Storky.Structures;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -48,44 +50,72 @@ namespace Storky
             {
                 while (!_exit)
                 {
-                    try
+                    Message msg = _comunication.ReceiveMessage();
+                    switch (msg?.Command ?? Message.CommandList.Unknown)
                     {
-                        Message msg = _comunication.ReceiveMessage();
-                        switch (msg?.Command ?? Message.CommandList.Unknown)
-                        {
-                            case Message.CommandList.Hello:
-                            case Message.CommandList.Ready:
-                                break;
-                            case Message.CommandList.RegisterNotify:
-                                AddRegistration(new CommandRegisterNotify(msg));
-                                break;
-                            case Message.CommandList.DeregisterNotify:
-                                RemoveRegistration(new CommandDeregisterNotify(msg));
-                                break;
-                            case Message.CommandList.Notify:
-                                Handshake.SendNotify(new CommandNotify(msg), this);
-                                break;
-                            case Message.CommandList.NotifyToGroup:
-                                Handshake.SendNotify(new CommandNotifyToGroup(msg), this);
-                                break;
-                            case Message.CommandList.NotifyToId:
-                                Handshake.SendNotify(new CommandNotifyToId(msg), this);
-                                break;
-                            case Message.CommandList.Unknown:
-                            default:
-                                break;
-                        }
+                        case Message.CommandList.Hello:
+                        case Message.CommandList.Ready:
+                            break;
+                        case Message.CommandList.RegisterNotify:
+                            AddRegistration(new CommandRegisterNotify(msg));
+                            break;
+                        case Message.CommandList.DeregisterNotify:
+                            RemoveRegistration(new CommandDeregisterNotify(msg));
+                            break;
+                        case Message.CommandList.Notify:
+                            Handshake.SendNotify(new CommandNotify(msg), this);
+                            break;
+                        case Message.CommandList.NotifyToGroup:
+                            Handshake.SendNotify(new CommandNotifyToGroup(msg), this);
+                            break;
+                        case Message.CommandList.NotifyToId:
+                            Handshake.SendNotify(new CommandNotifyToId(msg), this);
+                            break;
+                        case Message.CommandList.Unknown:
+                        default:
+                            break;
                     }
-                    catch (ThreadAbortException /*ex*/) { throw; }
-                    catch (ObjectDisposedException /*ex*/) { throw; }
-                    catch (SocketException  /*ex*/) { throw; }
-                    catch (Exception /*ex*/) { /*We try to listen */ }
                 }
             }
-            catch (ThreadAbortException /*ex*/) { }
-            catch (ObjectDisposedException /*ex*/) { }
-            catch (SocketException /*ex*/) { }
-            catch (Exception /*ex*/) { }
+            catch (ThreadAbortException ex)
+            {
+#if DEBUG
+                Log.Instance.Write("Coupling - Thread aborted." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Coupling - Thread aborted." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
+            }
+            catch (ObjectDisposedException ex)
+            {
+#if DEBUG
+                Log.Instance.Write("Coupling - Object disposed." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Coupling - Object disposed." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
+            }
+            catch (SocketException ex)
+            {
+#if DEBUG
+                Log.Instance.Write("Coupling - Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message + Environment.NewLine +
+                                   ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write(Coupling - "Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message, EventLogEntryType.Error);
+#endif
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                Log.Instance.Write("Coupling - General exception." + Environment.NewLine +
+                                    ex.Message + Environment.NewLine +
+                                    ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Coupling - General exception." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
+            }
             finally
             {
                 // Remove object from container

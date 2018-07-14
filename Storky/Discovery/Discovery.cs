@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Storky.LogManage;
 
 namespace Storky
 {
@@ -27,6 +29,8 @@ namespace Storky
         /// </summary>
         public static void Start()
         {
+            Log.Instance.Write("Discovery - Start service.", EventLogEntryType.Information);
+
             portConnect = DefaultPort;
 
             _mre = new ManualResetEvent(false);
@@ -48,30 +52,42 @@ namespace Storky
                         _mre.WaitOne();
                     }
                 }
+
+                Log.Instance.Write("Discovery - End service.", EventLogEntryType.Information);
             }
-            catch (ThreadAbortException /*ex*/)
+            catch (ThreadAbortException ex)
             {
+#if DEBUG
+                Log.Instance.Write("Discovery - End service: thread aborted." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Discovery - End service: thread aborted." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
                 // Does nothing
                 _exit = true;
             }
-            catch (Exception /*ex*/)
+            catch (Exception ex)
             {
                 // Catch all errors
+#if DEBUG
+                Log.Instance.Write("Discovery - End service: general exception." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Discovery - End service: general exception." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
                 // Does nothing
                 _exit = true;
             }
         }
-        #endregion
+#endregion
 
-        #region Closing method
+#region Closing method
         internal static void Stop()
         {
             _exit = true;
             _mre.Set();
         }
-        #endregion
+#endregion
 
-        #region Method of receiving events regarding the application or receipt
+#region Method of receiving events regarding the application or receipt
         /// <summary>
         /// Method called when the socket is awakened by a connection request.
         /// </summary>
@@ -99,28 +115,42 @@ namespace Storky
                 byte[] response = Encoding.ASCII.GetBytes("I am Storky, you have discovered me");
                 udp.Send(response, response.Length, remote);
             }
-            catch (ObjectDisposedException /*ex*/)
+            catch (ObjectDisposedException ex)
             {
+#if DEBUG
+                Log.Instance.Write("Discovery - Object disposed." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Discovery - Object disposed." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
             }
             catch (SocketException ex)
             {
-                switch (ex.NativeErrorCode)
-                {
-                    case 10053:     // Software caused connection abort.
-                    case 10054:     // Connection reset by peer.
-                        break;
-                    default:
-                        break;
-                }
+#if DEBUG
+                Log.Instance.Write("Discovery - Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message + Environment.NewLine +
+                                   ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Discovery - Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message, EventLogEntryType.Error);
+#endif
             }
-            catch (Exception /*ex*/)
+            catch (Exception ex)
             {
+#if DEBUG
+                Log.Instance.Write("Discovery - General exception." + Environment.NewLine +
+                                   ex.Message + Environment.NewLine +
+                                   ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Discovery - General exception." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
             }
             finally
             {
                 _mre.Set();
             }
         }
-        #endregion
+#endregion
     }
 }

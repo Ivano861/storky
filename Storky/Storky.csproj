@@ -48,6 +48,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Discovery\Discovery.cs" />
+    <Compile Include="LogManage\ILog.cs" />
+    <Compile Include="LogManage\Log.cs" />
     <Compile Include="Structures\IMember.cs" />
     <Compile Include="Structures\ISubscription.cs" />
     <Compile Include="Structures\Member.cs" />

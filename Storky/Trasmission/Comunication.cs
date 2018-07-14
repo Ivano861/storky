@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Storky.LogManage;
+using System;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -161,24 +163,38 @@ namespace Storky
                     _socket.Close();
                 }
             }
-            catch (ObjectDisposedException /*ex*/)
+            catch (ObjectDisposedException ex)
             {
                 // the socket in invalid
+#if DEBUG
+                Log.Instance.Write("Comunication - Object disposed." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Comunication - Object disposed." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
                 _exit = true;
             }
             catch (SocketException ex)
             {
-                switch (ex.NativeErrorCode)
-                {
-                    case 10053:
-                    case 10054:
-                        break;
-                    default:
-                        break;
-                }
+#if DEBUG
+                Log.Instance.Write("Comunication - Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message + Environment.NewLine +
+                                   ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Comunication - Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message, EventLogEntryType.Error);
+#endif
             }
-            catch (Exception /*ex*/)
+            catch (Exception ex)
             {
+#if DEBUG
+                Log.Instance.Write("Comunication - General exception." + Environment.NewLine +
+                                   ex.Message + Environment.NewLine +
+                                   ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Comunication - General exception." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
             }
             finally
             {

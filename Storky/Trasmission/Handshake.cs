@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Storky.LogManage;
 
 namespace Storky
 {
@@ -29,6 +31,8 @@ namespace Storky
         /// </summary>
         public static void Start()
         {
+            Log.Instance.Write("Handshake - Start service.", EventLogEntryType.Information);
+
             portConnect = DefaultPort;
 
             _mre = new ManualResetEvent(false);
@@ -62,15 +66,27 @@ namespace Storky
                         _mre.WaitOne();
                     }
                 }
+
+                Log.Instance.Write("Handshake - End service.", EventLogEntryType.Information);
             }
-            catch (ThreadAbortException /*ex*/)
+            catch (ThreadAbortException ex)
             {
+#if DEBUG
+                Log.Instance.Write("Handshake - End connection: thread aborted." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Handshake - End connection: thread aborted." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
                 // Does nothing and leaves the cleaning in the finally section
                 _exit = true;
             }
-            catch (Exception /*ex*/)
+            catch (Exception ex)
             {
                 // Catch all errors
+#if DEBUG
+                Log.Instance.Write("Handshake - End connection: generic exception." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Handshake - End connection: generic exception." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
                 // Does nothing and leaves the cleaning in the finally section
                 _exit = true;
             }
@@ -122,22 +138,36 @@ namespace Storky
                     comunication.SendCommand(new CommandReady());
                 }
             }
-            catch (ObjectDisposedException /*ex*/)
+            catch (ObjectDisposedException ex)
             {
+#if DEBUG
+                Log.Instance.Write("Handshake - Object disposed." + Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Handshake - Object disposed." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
             }
             catch (SocketException ex)
             {
-                switch (ex.NativeErrorCode)
-                {
-                    case 10053:     // Software caused connection abort.
-                    case 10054:     // Connection reset by peer.
-                        break;
-                    default:
-                        break;
-                }
+#if DEBUG
+                Log.Instance.Write("Handshake - Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message + Environment.NewLine +
+                                   ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Handshake - Socket exception." + Environment.NewLine +
+                                   "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
+                                   ex.Message, EventLogEntryType.Error);
+#endif
             }
-            catch (Exception /*ex*/)
+            catch (Exception ex)
             {
+#if DEBUG
+                Log.Instance.Write("Handshake - General exception." + Environment.NewLine +
+                                    ex.Message + Environment.NewLine +
+                                    ex.StackTrace, EventLogEntryType.Error);
+#else
+                Log.Instance.Write("Handshake - General exception." + Environment.NewLine + ex.Message, EventLogEntryType.Error);
+#endif
             }
             finally
             {

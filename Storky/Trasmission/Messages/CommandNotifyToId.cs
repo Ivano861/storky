@@ -8,10 +8,6 @@ namespace Storky
         #region Constructors
         public CommandNotifyToId(Message msg)
         {
-            if (msg.DataLength < 36)
-            {
-                // TODO: error
-            }
             byte[] buffer = msg.Data;
             Array.Copy(Encoding.ASCII.GetBytes(Id), 0, buffer, 0, 36);
             Info = new byte[buffer.Length - 36];
