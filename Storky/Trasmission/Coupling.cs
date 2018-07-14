@@ -101,7 +101,7 @@ namespace Storky
                                    ex.Message + Environment.NewLine +
                                    ex.StackTrace, EventLogEntryType.Error);
 #else
-                Log.Instance.Write(Coupling - "Socket exception." + Environment.NewLine +
+                Log.Instance.Write("Coupling - Socket exception." + Environment.NewLine +
                                    "Native code: (" + ex.NativeErrorCode.ToString() + ")" + Environment.NewLine +
                                    ex.Message, EventLogEntryType.Error);
 #endif
