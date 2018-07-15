@@ -28,6 +28,19 @@ namespace Storky
                     break;
                 }
             }
+
+        }
+        public override void Install(IDictionary stateSaver)
+        {
+            base.Install(stateSaver);
+
+            Log.Instance.Write("Storky service installed");
+        }
+        public override void Uninstall(IDictionary savedState)
+        {
+            base.Uninstall(savedState);
+
+            Log.Instance.Write("Storky service uninstalled");
         }
     }
 }
