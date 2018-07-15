@@ -29,6 +29,9 @@ namespace Storky
         /// </summary>
         public static void Start()
         {
+#if SERVICE_DEBUG
+            System.Threading.Thread.Sleep(20000);
+#endif
             Log.Instance.Write("Discovery - Start service.", EventLogEntryType.Information);
 
             portConnect = DefaultPort;

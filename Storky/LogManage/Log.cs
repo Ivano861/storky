@@ -9,8 +9,8 @@ namespace Storky.LogManage
 {
     internal sealed class Log : ILog
     {
-        private const string LogName = "Storky";
-        private const string Source = "Storky";
+        public const string LogName = "Storky";
+        public const string Source = "Storky";
 
         public const int IdNormal = 1;
         public const int IdDebug = 16;
@@ -21,8 +21,9 @@ namespace Storky.LogManage
         {
             try
             {
-                if (!EventLog.SourceExists(Source))
-                    EventLog.CreateEventSource(Source, LogName);
+                // Create source only for Console application
+                //if (!EventLog.SourceExists(Source))
+                //    EventLog.CreateEventSource(Source, LogName);
 
                 _exist = EventLog.SourceExists("Storky");
             }
