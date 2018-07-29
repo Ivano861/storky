@@ -1,4 +1,5 @@
-﻿using Flyer.Structures;
+﻿using Flyer.Errors;
+using Flyer.Structures;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -38,7 +39,7 @@ namespace Flyer
         #region Private members for synchronous method
         private bool _inProcess = false;
 
-        private IMember _member;
+        private readonly IMember _member;
 
         private Thread _connection;
         private Comunication _comunication;
@@ -65,9 +66,10 @@ namespace Flyer
                                                       TerminatedEventHandler terminatedEvent,
                                                       NotifyEventHandler notifyEvent)
         {
-            Collector result = new Collector(Member.Create(family, application, module, functionality));
-
-            result._connection = null;
+            Collector result = new Collector(Member.Create(family, application, module, functionality))
+            {
+                _connection = null
+            };
             result.Connected += connectedEvent;
             result.Terminated += terminatedEvent;
             result.Notify += notifyEvent;
@@ -187,68 +189,54 @@ namespace Flyer
         #region Connection method
         private bool InnerConnect(string hostName, int milliseconds)
         {
-            try
-            {
-                // Create a new connection
-                Socket tcp = new Socket(AddressFamily.InterNetwork,
+            // Create a new connection
+            Socket tcp = new Socket(AddressFamily.InterNetwork,
                                     SocketType.Stream,
                                     ProtocolType.Tcp);
-                try
+            try
+            {
+                // Tries to connect to the server
+                tcp.Connect(hostName, 5315);
+            }
+            catch (SocketException ex)
+            {
+                throw new CollectorException("Error in Collector Connect, for more information see the InnerException.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new CollectorException("Error in Collector Connect, for more information see the InnerException.", ex);
+            }
+
+            // Try to communicate to open a direct connection
+            try
+            {
+                // New socket for direct communication with the new point that requires connection
+                _comunication = new Comunication(tcp);
+
+                _comunication.SendCommand(new CommandHello(_member));
+
+                // Read acknowledgment message
+                Message msg = _comunication.ReceiveMessage();
+                // The only command awaited is Hello containing information of recognition to add it to the list of active socket.
+                if ((msg?.Command ?? Message.CommandList.Unknown) == Message.CommandList.Ready)
                 {
-                    // Tries to connect to the server
-                    tcp.Connect(hostName, 5315);
-                }
-                catch (SocketException ex)
-                {
-                    //if (Error != null)
-                    //    Error(512, ex.Message);
-
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    //if (Error != null)
-                    //    Error(513, ex.Message);
-
-                    return false;
-                }
-
-                // Try to communicate to open a direct connection
-                try
-                {
-                    // New socket for direct communication with the new point that requires connection
-                    _comunication = new Comunication(tcp);
-
-                    _comunication.SendCommand(new CommandHello(_member));
-
-                    // Read acknowledgment message
-                    Message msg = _comunication.ReceiveMessage();
-                    // The only command awaited is Hello containing information of recognition to add it to the list of active socket.
-                    if ((msg?.Command ?? Message.CommandList.Unknown) == Message.CommandList.Ready)
+                    _connection = new Thread(ConnectionThread)
                     {
-                        _connection = new Thread(ConnectionThread)
-                        {
-                            IsBackground = true
-                        };
-                        _connection.Start();
-                    }
-                    else
-                    {
-                        throw new Exception("Unable to communicate with the server.");
-                    }
+                        IsBackground = true
+                    };
+                    _connection.Start();
                 }
-                catch (Exception e)
+                else
                 {
-                    throw;
+                    throw new CollectorException("Unable to communicate with the server.");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO: catch error
-            }
-            finally
-            {
+                _comunication.Dispose();
+                _comunication = null;
 
+                throw new CollectorException("Error in Collector, for more information see the InnerException.", ex);
             }
 
             return true;
@@ -258,47 +246,55 @@ namespace Flyer
         #region Connect methods
         private void ConnectionThread()
         {
-            while (true)
+            try
             {
-                Message msg = _comunication.ReceiveMessage();
-                if (msg == null)
-                    break;
-
-                switch (msg.Command)
+                while (true)
                 {
-                    case Message.CommandList.Hello:
-                    case Message.CommandList.Ready:
-                    case Message.CommandList.RegisterNotify:
-                    case Message.CommandList.DeregisterNotify:
-                        // Ignore
+                    Message msg = _comunication.ReceiveMessage();
+                    if (msg == null)
                         break;
-                    case Message.CommandList.Notify:
-                        {
-                            CommandNotify notify = new CommandNotify(msg);
 
-                            // Raise event
-                            if (Notify != null)
+                    switch (msg.Command)
+                    {
+                        case Message.CommandList.Hello:
+                        case Message.CommandList.Ready:
+                        case Message.CommandList.RegisterNotify:
+                        case Message.CommandList.DeregisterNotify:
+                            // Ignore
+                            break;
+                        case Message.CommandList.Notify:
                             {
-                                byte[] info = new byte[notify.Info.Length];
-                                notify.Info.CopyTo(info, 0);
+                                CommandNotify notify = new CommandNotify(msg);
 
-                                Notify(new NotifyEventArgs(info));
+                                // Raise event
+                                if (Notify != null)
+                                {
+                                    byte[] info = new byte[notify.Info.Length];
+                                    notify.Info.CopyTo(info, 0);
+
+                                    Notify(new NotifyEventArgs(info));
+                                }
                             }
-                        }
-                        break;
-                    case Message.CommandList.Unknown:
-                    default:
-                        break;
+                            break;
+                        case Message.CommandList.Unknown:
+                        default:
+                            break;
+                    }
                 }
-
             }
+            catch (Exception ex)
+            {
+                throw new CollectorException("Error in Collector, for more information see the InnerException.", ex);
+            }
+            finally
+            {
+                _comunication.Dispose();
+                _comunication = null;
 
-            _comunication.Dispose();
-            _comunication = null;
+                Terminated?.Invoke(new TerminatedEventArgs());
 
-            Terminated?.Invoke(new TerminatedEventArgs());
-
-            _connection = null;
+                _connection = null;
+            }
         }
 
         public void Disconnect()
@@ -315,9 +311,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandNotify(message, self));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO: 
+                throw new CollectorException("Error in Collector Send, for more information see the InnerException.", ex);
             }
         }
         public void Send(byte[] message, ushort family, ushort application = 0, ushort module = 0, ushort functionality = 0, bool strict = true, bool self = false)
@@ -326,9 +322,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandNotifyToGroup(message, Subscription.Create(family, application, module, functionality), strict, self));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO: 
+                throw new CollectorException("Error in Collector Send, for more information see the InnerException.", ex);
             }
         }
         public void Send(byte[] message, string id)
@@ -337,9 +333,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandNotifyToId(message, id));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO: 
+                throw new CollectorException("Error in Collector Send, for more information see the InnerException.", ex);
             }
         }
 
@@ -349,9 +345,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandRegisterNotify(Subscription.Create(family, application, module, functionality), strict));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO:
+                throw new CollectorException("Error in Collector Register, for more information see the InnerException.", ex);
             }
         }
         public void Register(ISubscription subscription, bool strict = true)
@@ -360,9 +356,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandRegisterNotify(subscription, strict));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO:
+                throw new CollectorException("Error in Collector Register, for more information see the InnerException.", ex);
             }
         }
         public void Register(IEnumerable<ISubscription> subscriptions, bool strict = true)
@@ -371,9 +367,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandRegisterNotify(subscriptions, strict));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO:
+                throw new CollectorException("Error in Collector Register, for more information see the InnerException.", ex);
             }
         }
 
@@ -383,9 +379,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandDeregisterNotify(Subscription.Create(family, application, module, functionality)));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO:
+                throw new CollectorException("Error in Collector Deregister, for more information see the InnerException.", ex);
             }
         }
         public void Deregister(ISubscription subscription)
@@ -394,9 +390,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandDeregisterNotify(subscription));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO:
+                throw new CollectorException("Error in Collector Deregister, for more information see the InnerException.", ex);
             }
         }
         public void Deregister(IEnumerable<ISubscription> subscriptions)
@@ -405,9 +401,9 @@ namespace Flyer
             {
                 _comunication.SendCommand(new CommandDeregisterNotify(subscriptions));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO:
+                throw new CollectorException("Error in Collector Deregister, for more information see the InnerException.", ex);
             }
         }
         #endregion

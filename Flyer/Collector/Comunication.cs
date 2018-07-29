@@ -170,19 +170,15 @@ namespace Flyer
                 // the socket in invalid
                 _exit = true;
             }
-            catch (SocketException ex)
+            catch (SocketException /*ex*/)
             {
-                switch (ex.NativeErrorCode)
-                {
-                    case 10053:
-                    case 10054:
-                        break;
-                    default:
-                        break;
-                }
+                // the socket in invalid
+                _exit = true;
             }
             catch (Exception /*ex*/)
             {
+                // the socket in invalid
+                _exit = true;
             }
             finally
             {

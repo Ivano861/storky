@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Flyer.Errors;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -76,6 +77,10 @@ namespace Flyer
                 _inProcess = true;
                 return InnerSearch(milliseconds);
             }
+            catch (Exception ex)
+            {
+                throw new DiscoveryException("Error in Discovery Search, for more information see the InnerException.", ex);
+            }
             finally
             {
                 _inProcess = false;
@@ -129,6 +134,10 @@ namespace Flyer
                 IEnumerable<IPEndPoint> result = InnerSearch((int)times);
                 Terminate?.Invoke(new TerminateDiscoveryEventArgs(result));
             }
+            catch (Exception ex)
+            {
+                throw new DiscoveryException("Error in asynchronous Discovery Search, for more information see the InnerException.", ex);
+            }
             finally
             {
                 _inProcess = false;
@@ -173,9 +182,9 @@ namespace Flyer
                     _isClosed = true;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO: catch error
+                throw new DiscoveryException("Error in internal asynchronous Discovery Search, for more information see the InnerException.", ex);
             }
 
             return _endPoints;
@@ -200,6 +209,10 @@ namespace Flyer
                     if (_thread != null)
                         Found?.Invoke(new FoundDiscoveryEventArgs(remote));
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new DiscoveryException("Error in receive asynchronous Discovery Search, for more information see the InnerException.", ex);
             }
             finally
             {

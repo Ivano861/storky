@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Flyer.Errors;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,8 +26,7 @@ namespace Flyer.Structures
                 (application == 0 && module != 0) ||
                 (module == 0 && functionality != 0))
             {
-                // TODO: insert correct exception
-                throw new ArgumentException("The family parameter cannot be equal to 0 and the other parameters cannot be equal to 0 if a subsequent parameter is greater than 0.");
+                throw new CollectorArgumentException("The family parameter cannot be equal to 0 and the other parameters cannot be equal to 0 if a subsequent parameter is greater than 0.");
             }
 
             return new Subscription(family, application, module, functionality);

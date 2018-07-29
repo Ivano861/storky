@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Flyer.Errors;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,8 +24,7 @@ namespace Flyer.Structures
         {
             if (family == 0 || application == 0 || module == 0 || functionality == 0)
             {
-                // TODO: insert correct exception
-                throw new ArgumentException("All parameters require a value greater than 0.");
+                throw new CollectorArgumentException("All parameters require a value greater than 0.");
             }
 
             return new MemberSubscription(family, application, module, functionality);

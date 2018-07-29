@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Flyer.Errors;
+using System;
 using System.Text;
 
 namespace Flyer
@@ -10,14 +11,9 @@ namespace Flyer
         {
             if (string.IsNullOrEmpty(id) || id.Length != 36)
             {
-                // TODO: insert error
-                throw new ArgumentException("the id parameter is invalid.");
+                throw new CollectorArgumentException("the id parameter is invalid.");
             }
-            //if (id.Length > 36)
-            //    Id = id.Substring(0, 36);
-            //else if (id.Length < 36)
-            //    Id = id + new string(' ', 36 - id.Length);
-            //else
+
             Id = id;
             Info = new byte[info.Length];
             if (Info.Length > 0)
