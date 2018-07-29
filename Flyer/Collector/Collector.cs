@@ -301,6 +301,14 @@ namespace Flyer
             _connection = null;
         }
 
+        public void Disconnect()
+        {
+            if (_comunication != null)
+            {
+                _comunication.End();
+            }
+        }
+
         public void Send(byte[] message, bool self = false)
         {
             try

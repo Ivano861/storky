@@ -100,6 +100,11 @@ namespace TestFlayer
             //throw new NotImplementedException();
         }
 
+        private void Disconnect_Click(object sender, RoutedEventArgs e)
+        {
+            _collector.Disconnect();
+        }
+
         private void Register_Click(object sender, RoutedEventArgs e)
         {
             _collector.Register(2);
